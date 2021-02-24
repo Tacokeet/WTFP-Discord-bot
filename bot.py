@@ -5,34 +5,47 @@ import discord
 import eyed3
 import os
 from os import path
-
 from discord.ext import commands
 from dotenv import load_dotenv
-
 from tinydb import TinyDB, Query
 from tinydb.operations import increment
+from threading import Timer
 
-if not path.exists('streepjesDB.json'):
-    open('streepjesDB.json', 'w+')
-db = TinyDB('streepjesDB.json')
+"""Database variables"""
+path_to_database = 'streepjesDB.json'
+
+if not path.exists(path_to_database):
+    open(path_to_database, 'w+')
+
+db = TinyDB(path_to_database)
 User = Query()
 streepjes_messages = {}
 
+"""If dotenv is used it is loaded in here if not replace 'DISCORD_TOKEN with yours'"""
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
+"""Declaring intent so that I can search through members"""
 intents = discord.Intents.default()
 intents.members = True
 
-client = discord.Client()
+# client = discord.Client()
+
+"""Setting up bot"""
 bot = commands.Bot(command_prefix='!', intents=intents)
 
+"""Soundlist variables"""
 soundDir = []
 soundDict = {}
-for file in os.listdir('F:/GoogleDrive/Soundtest'):
-    if file.__contains__('mp3'):
-        soundDict[file] = eyed3.load('F:/GoogleDrive/Soundtest/' + file).tag.artist
-        soundDir.append(file)
+path_to_soundfiles = "F:/GoogleDrive/Soundtest"
+
+
+def update_soundlist():
+    """Updates the soundlist variables"""
+    for file in os.listdir(path_to_soundfiles):
+        if file.__contains__('mp3'):
+            soundDict[file] = eyed3.load(path_to_soundfiles + '/' + file).tag.artist
+            soundDir.append(file)
 
 
 def check(author):
@@ -41,11 +54,7 @@ def check(author):
     def inner_check(message):
         if message.author != author:
             return False
-        try:
-            int(message.content)
-            return True
-        except ValueError:
-            return False
+        return True
 
     return inner_check
 
@@ -69,6 +78,7 @@ def search_soundlist(search, sounddict):
 
 
 def create_soundboardlist(sound_dict):
+    """Creates string that shows all the avaible sounds"""
     sb_list_messages = []
     tables = []
     float_sep = math.modf(len(sound_dict) / 40)
@@ -133,7 +143,7 @@ async def get_response(ctx, sounddict):
         await ctx.message.channel.send('You took to long :sleeping:')
         return
     if str(msg.content) == "cancel":
-        return
+        return False
     msgnumber = int(msg.content)
     if msgnumber - 1 > len(sounddict):
         await ctx.message.channel.send('Number not in the list please try again')
@@ -144,6 +154,17 @@ async def get_response(ctx, sounddict):
 @bot.event
 async def on_ready():
     print('Bot online!')
+
+
+@bot.event
+async def on_command_error(ctx, exception):
+    if exception.__class__ == discord.ext.commands.errors.MissingRequiredArgument:
+        if str(ctx.command) == "sb":
+            await ctx.message.channel.send("Please specify a number or the full name.")
+        elif str(ctx.command) == "sbsearch":
+            await ctx.message.channel.send("Please give a argument to search for.")
+        elif str(ctx.command) == "streepje":
+            await ctx.message.channel.send("Please specify a user to receive a streepje.")
 
 
 @bot.event
@@ -166,37 +187,37 @@ async def on_reaction_add(reaction, user):
 
 
 @bot.command(name="reload")
-async def commands(ctx):
+async def reload(ctx):
     """Reloads the soundboard."""
+    update_soundlist()
     await ctx.message.channel.send(
         "All sounds are reloaded!"
     )
-
-    for file in os.listdir('F:/GoogleDrive/Soundtest'):
-        if file.__contains__('mp3'):
-            soundDict[file] = eyed3.load('F:/GoogleDrive/Soundtest/' + file).tag.artist
-            soundDir.append(file)
+    await ctx.message.delete()
 
 
 @bot.command(name="streepjeslist")
-async def commands(ctx):
+async def streepjeslist(ctx):
+    """Shows the current standing of streepjes."""
     message = ""
     for person in db.all():
         message += "{person} : {streepjes}\n".format(person=bot.get_user(person['name']).name,
                                                      streepjes=person['streepjes'])
-    await ctx.message.channel.send(message)
+    if message == "":
+        await ctx.message.channel.send("There aren't any streepjes in the database.")
+    else:
+        await ctx.message.channel.send(message)
+    await ctx.message.delete()
 
 
 @bot.command(name="streepje")
-async def commands(ctx, person):
+async def streepje(ctx, person):
     """Gives streepjes to a user."""
     if ctx.message.author.permissions_in(ctx.message.channel).ban_members:
         if not db.search(User.name == ctx.message.mentions[0].id):
             db.insert({'name': ctx.message.mentions[0].id, 'streepjes': 1})
         else:
             db.update(increment('streepjes'), User.name == ctx.message.mentions[0].id)
-        print(ctx.message.mentions[0].name)
-        print(str(db.search(User.name == int(ctx.message.mentions[0].id))[0]['streepjes']))
         await ctx.message.channel.send(
             "{Person} now has {streepjes} streepje(s)".format(Person=ctx.message.mentions[0].name,
                                                               streepjes=str(db.search(
@@ -204,7 +225,7 @@ async def commands(ctx, person):
                                                                                 'streepjes'])))
     else:
         await ctx.message.channel.send(
-            "{Author} wants to add a streepje to {Person}. \n 3 👍 are needed!".format(
+            "{Author} wants to add a streepje to {Person}.\n3 👍 are needed!".format(
                 Author=ctx.message.author.mention, Person=person)
         )
         messages = await ctx.message.channel.history(limit=10).flatten()
@@ -223,12 +244,28 @@ async def soundboardlist(ctx):
         "Type a number to make a choice or type cancel to stop"
     )
     response = await get_response(ctx, soundDict)
-    await soundboard(ctx, soundDir[response - 1].strip('.mp3'))
+    if not response:
+        return
+    try:
+        await soundboard(ctx, soundDir[response - 1].strip('.mp3'))
+    except AttributeError:
+        await ctx.message.channel.send(
+            "You are currently not in a voice channel!\nPlease join a voice channel."
+        )
+    await ctx.message.delete()
 
 
 @bot.command(name='sbsearch')
 async def soundboardsearch(ctx, search):
     """Search trough all the available sounds and show them, then type a number to play the sound."""
+    try:
+        voice_channel = ctx.author.voice.channel
+    except AttributeError:
+        await ctx.message.channel.send(
+            "Join a voice channel to use this command!"
+        )
+        await ctx.message.delete()
+        return
     results = search_soundlist(search.lower(), soundDict)
     if results:
         css = create_search_soundlist(results, soundDict)
@@ -236,11 +273,20 @@ async def soundboardsearch(ctx, search):
             await ctx.message.channel.send(
                 result_list
             )
+        await ctx.message.delete()
         await ctx.message.channel.send(
             "Type a number to make a choice or type cancel to stop"
         )
         response = await get_response(ctx, css[1])
-        await soundboard(ctx, soundDir[results[response - 1]].strip('.mp3'))
+        if not response:
+            return
+
+        try:
+            await soundboard(ctx, soundDir[results[response - 1]].strip('.mp3'))
+        except AttributeError:
+            await ctx.message.channel.send(
+                "You are currently not in a voice channel!\nPlease join a voice channel."
+            )
     else:
         await ctx.message.channel.send(
             "Could not find any sounds matching that description")
@@ -249,8 +295,14 @@ async def soundboardsearch(ctx, search):
 @bot.command(name="sb")
 async def soundboard(ctx, sound):
     """Play the sound given in parameter, this can be the name or index in list."""
-    # Gets voice channel of message author
-    voice_channel = ctx.author.voice.channel
+    try:
+        voice_channel = ctx.author.voice.channel
+    except AttributeError:
+        await ctx.message.channel.send(
+            "Join a voice channel to use this command!"
+        )
+        await ctx.message.delete()
+
     if voice_channel is not None:
         if not bot.voice_clients:
             vc = await voice_channel.connect()
@@ -263,17 +315,13 @@ async def soundboard(ctx, sound):
                         await vc_client.move_to(voice_channel)
                         vc = vc_client
         if sound.isdigit():
-            vc.play(discord.FFmpegOpusAudio(source="F:/GoogleDrive/Soundtest/" + soundDir[int(sound) - 1]))
+            vc.play(discord.FFmpegOpusAudio(source=path_to_soundfiles + '/' + soundDir[int(sound) - 1]))
         else:
-            vc.play(discord.FFmpegOpusAudio(source="F:/GoogleDrive/Soundtest/" + sound + ".mp3"))
+            vc.play(discord.FFmpegOpusAudio(source=path_to_soundfiles + '/' + sound + ".mp3"))
         while vc.is_playing():
             time.sleep(.1)
         vc.stop()
-    else:
-        await ctx.message.channel.send(
-            str(ctx.author.name) + "is not in a channel."
-        )
-    await ctx.message.delete()
+        await ctx.message.delete()
 
 
 @bot.command()
@@ -281,12 +329,15 @@ async def join(ctx):
     """Join your current voicechannel."""
     channel = ctx.author.voice.channel
     await channel.connect()
+    await ctx.message.delete()
 
 
 @bot.command()
 async def leave(ctx):
     """Disconnect from current voicechannel."""
     await ctx.voice_client.disconnect()
+    await ctx.message.delete()
 
 
+update_soundlist()
 bot.run(TOKEN)
