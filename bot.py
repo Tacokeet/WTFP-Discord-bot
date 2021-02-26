@@ -10,6 +10,8 @@ from dotenv import load_dotenv, find_dotenv
 from tinydb import TinyDB, Query
 from tinydb.operations import increment
 
+load_dotenv()
+
 """Database variables"""
 path_to_database = str(os.getenv('STREEPJES_DB'))
 
@@ -17,11 +19,12 @@ if not path.exists(path_to_database):
     open(path_to_database, 'w+')
 
 db = TinyDB(path_to_database)
+print(db.all())
 User = Query()
 streepjes_messages = {}
 
-"""If dotenv is used it is loaded in here if not replace DISCORD_TOKEN with yours"""
-load_dotenv(find_dotenv())
+"""If dotenv is used it is loaded in here if not replace DISCORD_TOKEN with load_dotenv(find_dotenv())
+yours"""
 TOKEN = os.getenv('DISCORD_TOKEN')
 
 """Declaring intent so that I can search through members"""
