@@ -11,7 +11,7 @@ from tinydb import TinyDB, Query
 from tinydb.operations import increment
 
 """Database variables"""
-path_to_database = 'streepjesDB.json'
+path_to_database = str(os.getenv('STREEPJES_DB'))
 
 if not path.exists(path_to_database):
     open(path_to_database, 'w+')
@@ -20,7 +20,7 @@ db = TinyDB(path_to_database)
 User = Query()
 streepjes_messages = {}
 
-"""If dotenv is used it is loaded in here if not replace 'DISCORD_TOKEN with yours'"""
+"""If dotenv is used it is loaded in here if not replace DISCORD_TOKEN with yours"""
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
@@ -34,7 +34,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 """Soundlist variables"""
 soundDir = []
 soundDict = {}
-path_to_soundfiles = "F:/GoogleDrive/Soundtest"
+path_to_soundfiles = str(os.getenv('SOUNDFILE_PATH'))
 
 
 def update_soundlist():
