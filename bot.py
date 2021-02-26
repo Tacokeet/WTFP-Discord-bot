@@ -6,7 +6,7 @@ import eyed3
 import os
 from os import path
 from discord.ext import commands
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 from tinydb import TinyDB, Query
 from tinydb.operations import increment
 
@@ -21,7 +21,7 @@ User = Query()
 streepjes_messages = {}
 
 """If dotenv is used it is loaded in here if not replace DISCORD_TOKEN with yours"""
-load_dotenv()
+load_dotenv(find_dotenv())
 TOKEN = os.getenv('DISCORD_TOKEN')
 
 """Declaring intent so that I can search through members"""
