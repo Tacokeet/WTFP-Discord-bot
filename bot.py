@@ -84,40 +84,40 @@ def create_soundboardlist(sound_dict):
     """Creates string that shows all the avaible sounds"""
     sb_list_messages = []
     tables = []
-    float_sep = math.modf(len(sound_dict) / 40)
+    float_sep = math.modf(len(sound_dict) / 30)
     keys_list = list(sound_dict)
     for amount_table in range(round(float_sep[1]) + 1):
         temptable = []
         lefttable = []
         if len(sound_dict) >= 20:
             for x in range(20):
-                if (40 * amount_table + x + 20) >= len(sound_dict):
-                    lefttable.append(str('[' + str(40 * amount_table + x + 1) + '] ' + list(sound_dict.keys())[
-                        40 * amount_table + x].strip('.mp3') + ' by: ' + sound_dict[
-                                             list(sound_dict.keys())[40 * amount_table + x]]))
+                if (30 * amount_table + x + 20) >= len(sound_dict):
+                    lefttable.append(str('[' + str(30 * amount_table + x + 1) + '] ' + list(sound_dict.keys())[
+                        30 * amount_table + x].strip('.mp3') + ' by: ' + sound_dict[
+                                             list(sound_dict.keys())[30 * amount_table + x]]))
                     continue
                 temptable.append(str(
-                    '[' + str(40 * amount_table + x + 1) + '] ' + list(sound_dict.keys())[
-                        40 * amount_table + x].strip('.mp3') + ' by: ' +
-                    sound_dict[list(sound_dict.keys())[40 * amount_table + x]]))
-                temptable.append(str('[' + str(40 * amount_table + x + 21) + '] ' + list(sound_dict.keys())[
-                    40 * amount_table + x + 20].strip('.mp3') + ' by: ' + sound_dict[
-                                         list(sound_dict.keys())[40 * amount_table + x + 20]]))
+                    '[' + str(30 * amount_table + x + 1) + '] ' + list(sound_dict.keys())[
+                        30 * amount_table + x].strip('.mp3') + ' by: ' +
+                    sound_dict[list(sound_dict.keys())[30 * amount_table + x]]))
+                temptable.append(str('[' + str(30 * amount_table + x + 21) + '] ' + list(sound_dict.keys())[
+                    30 * amount_table + x + 20].strip('.mp3') + ' by: ' + sound_dict[
+                                         list(sound_dict.keys())[30 * amount_table + x + 20]]))
             tables.append(temptable)
         else:
             for x in range(len(sound_dict)):
-                if (40 * amount_table + x + 20) >= len(sound_dict):
-                    lefttable.append(str('[' + str(40 * amount_table + x + 1) + '] ' + list(sound_dict.keys())[
-                        40 * amount_table + x].strip('.mp3') + ' by: ' + sound_dict[
-                                             list(sound_dict.keys())[40 * amount_table + x]]))
+                if (30 * amount_table + x + 20) >= len(sound_dict):
+                    lefttable.append(str('[' + str(30 * amount_table + x + 1) + '] ' + list(sound_dict.keys())[
+                        30 * amount_table + x].strip('.mp3') + ' by: ' + sound_dict[
+                                             list(sound_dict.keys())[30 * amount_table + x]]))
                     continue
                 temptable.append(str(
-                    '[' + str(40 * amount_table + x + 1) + '] ' + list(sound_dict.keys())[
-                        40 * amount_table + x].strip('.mp3') + ' by: ' +
-                    sound_dict[list(sound_dict.keys())[40 * amount_table + x]]))
-                temptable.append(str('[' + str(40 * amount_table + x + 21) + '] ' + list(sound_dict.keys())[
-                    40 * amount_table + x + 20].strip('.mp3') + ' by: ' + sound_dict[
-                                         list(sound_dict.keys())[40 * amount_table + x + 20]]))
+                    '[' + str(30 * amount_table + x + 1) + '] ' + list(sound_dict.keys())[
+                        30 * amount_table + x].strip('.mp3') + ' by: ' +
+                    sound_dict[list(sound_dict.keys())[30 * amount_table + x]]))
+                temptable.append(str('[' + str(30 * amount_table + x + 21) + '] ' + list(sound_dict.keys())[
+                    30 * amount_table + x + 20].strip('.mp3') + ' by: ' + sound_dict[
+                                         list(sound_dict.keys())[30 * amount_table + x + 20]]))
             tables.append(temptable)
 
     strlefttable = "\n"
