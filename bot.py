@@ -19,7 +19,6 @@ if not path.exists(path_to_database):
     open(path_to_database, 'w+')
 
 db = TinyDB(path_to_database)
-print(db.all())
 User = Query()
 streepjes_messages = {}
 
@@ -38,6 +37,10 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 soundDir = []
 soundDict = {}
 path_to_soundfiles = str(os.getenv('SOUNDFILE_PATH'))
+
+"""Jeopardy variables"""
+teams = []
+buzer = False
 
 
 def update_soundlist():
@@ -194,6 +197,86 @@ async def reload(ctx):
         "All sounds are reloaded!"
     )
     await ctx.message.delete()
+
+
+@bot.command(name="mkteam")
+async def make_team(ctx, personone, persontwo, teamname, soundid):
+    """make team for Jeopardy."""
+    if ctx.message.author.permissions_in(ctx.message.channel).ban_members:
+        await ctx.message.channel.send(
+            "{personone} and {persontwo} are now team: {teamname} with soundID: {soundid}.".format(
+                personone=ctx.message.mentions[0].name,
+                persontwo=ctx.message.mentions[1].name, teamname=str(teamname), soundid=str(soundid)))
+        teams.append([ctx.message.mentions[0].id, ctx.message.mentions[1].id, teamname, soundid])
+    else:
+        await ctx.message.channel.send(
+            "Only admins are allowed to create teams."
+        )
+
+
+@bot.command(name="reset")
+async def reset_question(ctx):
+    """Reset question for Jeopardy."""
+    global buzer
+    if ctx.message.author.permissions_in(ctx.message.channel).ban_members:
+        buzer = False
+        await ctx.message.channel.send(
+            "Buzzers are reset!"
+        )
+    else:
+        await ctx.message.channel.send(
+            "Only admins are allowed to reset the question teams."
+        )
+
+
+@bot.command(name="clrteams")
+async def clear_team(ctx):
+    """clears teams for Jeopardy."""
+    await ctx.message.channel.send(
+        "Cleared all Jeopardy teams."
+    )
+    teams.clear()
+
+
+@bot.command(name="listteams")
+async def clear_team(ctx):
+    """lists all the teams for Jeopardy."""
+    allteams = ""
+    for team in teams:
+        allteams += "Team : " + team[2] + " with members: " + bot.get_user(team[0]).name + " and " + bot.get_user(
+            team[1]).name + " with buzzer sound: " + team[3] + '\n'
+    await ctx.message.channel.send(
+        allteams
+    )
+
+
+@bot.command(name="buz")
+async def call(ctx):
+    """Buzzez in for Jeopardy."""
+    global buzer
+
+    if teams:
+        if buzer:
+            await ctx.message.channel.send(
+                " Buzzers are disabled waiting for reset!"
+            )
+            return
+        for team in teams:
+            if ctx.message.author.id in team:
+                await ctx.message.channel.send(
+                    team[2] + " Buzzed in!"
+                )
+                buzer = True
+                await soundboard(ctx, team[3])
+                return
+        await ctx.message.channel.send(
+            ctx.message.author.name + " is not in a team!"
+        )
+        return
+    else:
+        await ctx.message.channel.send(
+            "There aren't any teams, please make some teams."
+        )
 
 
 @bot.command(name="streepjeslist")
