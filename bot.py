@@ -45,7 +45,7 @@ buzer = False
 
 def update_soundlist():
     """Updates the soundlist variables"""
-    for file in os.listdir(path_to_soundfiles):
+    for file in sorted(os.listdir(path_to_soundfiles)):
         if file.__contains__('mp3'):
             soundDict[file] = eyed3.load(path_to_soundfiles + '/' + file).tag.artist
             soundDir.append(file)
