@@ -57,12 +57,12 @@ ytdl_format_options = {
     'default_search': 'auto',
     'source_address': '0.0.0.0'  # bind to ipv4 since ipv6 addresses cause issues sometimes
 }
-
 ffmpeg_options = {
     'options': '-vn'
 }
-
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
+song_queue = []
+player_queue = []
 
 
 def update_soundlist():
@@ -423,27 +423,52 @@ async def soundboard(ctx, sound):
             vc.play(discord.FFmpegOpusAudio(source=path_to_soundfiles + '/' + soundDir[int(sound) - 1]))
         else:
             vc.play(discord.FFmpegOpusAudio(source=path_to_soundfiles + '/' + sound + ".mp3"))
-        while vc.is_playing():
-            time.sleep(.1)
-        vc.stop()
         await ctx.message.delete()
+
+
+def play_next(ctx):
+    if len(player_queue) >= 1:
+        player_queue.pop(0)
+        song_queue.pop(0)
+        try:
+            ctx.voice_client.play(player_queue[0], after=lambda e: play_next(ctx))
+        except IndexError:
+            return
+    else:
+        return
 
 
 async def from_url(url, *, loop=None, stream=False):
     loop = loop or asyncio.get_event_loop()
     data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
-
-    if 'entries' in data:
-        # take first item from a playlist
-        data = data['entries'][0]
-
     filename = data['url'] if stream else ytdl.prepare_filename(data)
+    song_queue.append(data['title'])
     return discord.FFmpegPCMAudio(filename, **ffmpeg_options)
 
 
 @bot.command(name="p")
 async def p(ctx, url):
     await play(ctx, url)
+
+
+@bot.command(name="removesong")
+async def remove_song(ctx, index: int):
+    await ctx.send("🎶 Removed: " + song_queue[index - 1] + " from the queue")
+    song_queue.pop(index - 1)
+    player_queue.pop(index - 1)
+
+
+@bot.command(name="playlist")
+async def playlist(ctx):
+    if len(song_queue) >= 1:
+        playlist_string = "```ini\n"
+        for x, y in enumerate(song_queue):
+            playlist_string += '[' + str(x + 1) + ']' + " " + str(y) + '\n'
+
+        playlist_string += "```"
+        await ctx.send(playlist_string)
+    else:
+        await ctx.send("🎶 Playlist is empty you an add song by using the command !p <url> or !play <url>")
 
 
 @bot.command(name="play")
@@ -467,47 +492,36 @@ async def play(ctx, url):
                     if ctx.author.voice.channel.guild == vc_client.guild:
                         await vc_client.move_to(voice_channel)
                         vc = vc_client
+    if vc.is_playing():
+        player_queue.append(await from_url(url))
+        await ctx.send("🎶 Added: " + song_queue[-1] + " to the playlist")
+
+        return
 
     player = await from_url(url, loop=bot.loop, stream=True)
-    ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
-    await ctx.send('Now playing: {}'.format(player.title))
+    player_queue.append(player)
+    ctx.voice_client.play(player, after=lambda e: play_next(ctx))
+    await ctx.send("🎶 Now Playing: " + song_queue[-1])
 
 
-@bot.command(name="stop")
-async def stop(ctx):
-    """Changes the player's volume"""
+@bot.command(name="skip")
+async def skip(ctx):
+    """Skips the current song"""
     if ctx.voice_client is None:
         return await ctx.send("Not connected to a voice channel.")
 
     ctx.voice_client.stop()
 
 
-# @bot.command(name="yt")
-# async def yt(ctx, url):
-#     """Plays from a url (almost anything youtube_dl supports)"""
-#     try:
-#         voice_channel = ctx.author.voice.channel
-#     except AttributeError:
-#         await ctx.message.channel.send(
-#             "Join a voice channel to use this command!"
-#         )
-#         await ctx.message.delete()
-#     if voice_channel is not None:
-#         if not bot.voice_clients:
-#             vc = await voice_channel.connect()
-#         else:
-#             for vc_client in bot.voice_clients:
-#                 if ctx.author.voice.channel.id == vc_client.channel.id:
-#                     vc = vc_client
-#                 else:
-#                     if ctx.author.voice.channel.guild == vc_client.guild:
-#                         await vc_client.move_to(voice_channel)
-#                         vc = vc_client
-#         async with ctx.typing():
-#             player = await from_url(url, loop=bot.loop)
-#             vc.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
-#
-#         await ctx.send(f'Now playing: {player.title}')
+@bot.command(name="stop")
+async def skip(ctx):
+    """Stops the player"""
+    if ctx.voice_client is None:
+        return await ctx.send("Not connected to a voice channel.")
+
+    song_queue.clear()
+    player_queue.clear()
+    ctx.voice_client.stop()
 
 
 @bot.command()
