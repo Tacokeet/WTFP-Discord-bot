@@ -10,6 +10,7 @@ from discord.ext import commands
 from dotenv import load_dotenv, find_dotenv
 from tinydb import TinyDB, Query
 from tinydb.operations import increment
+from discordTogether import DiscordTogether
 
 load_dotenv()
 
@@ -63,6 +64,9 @@ ffmpeg_options = {
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 song_queue = []
 player_queue = []
+
+"""Discord Together variables"""
+togetherControl = DiscordTogether(bot)
 
 
 def update_soundlist():
@@ -522,6 +526,13 @@ async def skip(ctx):
     song_queue.clear()
     player_queue.clear()
     ctx.voice_client.stop()
+
+
+@bot.command('together')
+async def together(ctx, type):
+    """Together: youtube, poker, chess, betrayal, fishing"""
+    link = await togetherControl.create_link(ctx.author.voice.channel.id, str(type))
+    await ctx.send(f"Click the blue link!\n{link}")
 
 
 @bot.command()
