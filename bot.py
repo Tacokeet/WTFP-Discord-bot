@@ -4,6 +4,7 @@ import time
 import discord
 import eyed3
 import os
+import youtube_dl
 from os import path
 from discord.ext import commands
 from dotenv import load_dotenv, find_dotenv
@@ -41,6 +42,27 @@ path_to_soundfiles = str(os.getenv('SOUNDFILE_PATH'))
 """Jeopardy variables"""
 teams = []
 buzer = False
+
+"""Youtube dl variables"""
+ytdl_format_options = {
+    'format': 'bestaudio/best',
+    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+    'restrictfilenames': True,
+    'noplaylist': True,
+    'nocheckcertificate': True,
+    'ignoreerrors': False,
+    'logtostderr': False,
+    'quiet': True,
+    'no_warnings': True,
+    'default_search': 'auto',
+    'source_address': '0.0.0.0'  # bind to ipv4 since ipv6 addresses cause issues sometimes
+}
+
+ffmpeg_options = {
+    'options': '-vn'
+}
+
+ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
 
 def update_soundlist():
@@ -405,6 +427,87 @@ async def soundboard(ctx, sound):
             time.sleep(.1)
         vc.stop()
         await ctx.message.delete()
+
+
+async def from_url(url, *, loop=None, stream=False):
+    loop = loop or asyncio.get_event_loop()
+    data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
+
+    if 'entries' in data:
+        # take first item from a playlist
+        data = data['entries'][0]
+
+    filename = data['url'] if stream else ytdl.prepare_filename(data)
+    return discord.FFmpegPCMAudio(filename, **ffmpeg_options)
+
+
+@bot.command(name="p")
+async def p(ctx, url):
+    await play(ctx, url)
+
+
+@bot.command(name="play")
+async def play(ctx, url):
+    """Streams from a url (same as yt, but doesn't predownload)"""
+    try:
+        voice_channel = ctx.author.voice.channel
+    except AttributeError:
+        await ctx.message.channel.send(
+            "Join a voice channel to use this command!"
+        )
+        await ctx.message.delete()
+    if voice_channel is not None:
+        if not bot.voice_clients:
+            vc = await voice_channel.connect()
+        else:
+            for vc_client in bot.voice_clients:
+                if ctx.author.voice.channel.id == vc_client.channel.id:
+                    vc = vc_client
+                else:
+                    if ctx.author.voice.channel.guild == vc_client.guild:
+                        await vc_client.move_to(voice_channel)
+                        vc = vc_client
+
+    player = await from_url(url, loop=bot.loop, stream=True)
+    ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
+    await ctx.send('Now playing: {}'.format(player.title))
+
+
+@bot.command(name="stop")
+async def stop(ctx):
+    """Changes the player's volume"""
+    if ctx.voice_client is None:
+        return await ctx.send("Not connected to a voice channel.")
+
+    ctx.voice_client.stop()
+
+
+# @bot.command(name="yt")
+# async def yt(ctx, url):
+#     """Plays from a url (almost anything youtube_dl supports)"""
+#     try:
+#         voice_channel = ctx.author.voice.channel
+#     except AttributeError:
+#         await ctx.message.channel.send(
+#             "Join a voice channel to use this command!"
+#         )
+#         await ctx.message.delete()
+#     if voice_channel is not None:
+#         if not bot.voice_clients:
+#             vc = await voice_channel.connect()
+#         else:
+#             for vc_client in bot.voice_clients:
+#                 if ctx.author.voice.channel.id == vc_client.channel.id:
+#                     vc = vc_client
+#                 else:
+#                     if ctx.author.voice.channel.guild == vc_client.guild:
+#                         await vc_client.move_to(voice_channel)
+#                         vc = vc_client
+#         async with ctx.typing():
+#             player = await from_url(url, loop=bot.loop)
+#             vc.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
+#
+#         await ctx.send(f'Now playing: {player.title}')
 
 
 @bot.command()
