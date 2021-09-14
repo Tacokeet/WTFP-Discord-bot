@@ -1,19 +1,19 @@
 import asyncio
 import math
-import time
 import discord
 import eyed3
 import os
 import youtube_dl
+import validators
 from os import path
-from discord.ext import commands
-from dotenv import load_dotenv, find_dotenv
+from discord.ext import commands, tasks
+from dotenv import load_dotenv
 from tinydb import TinyDB, Query
 from tinydb.operations import increment
 from discordTogether import DiscordTogether
+from youtubesearchpython import VideosSearch
 
 load_dotenv()
-
 """Database variables"""
 path_to_database = str(os.getenv('STREEPJES_DB'))
 
@@ -33,7 +33,8 @@ intents = discord.Intents.default()
 intents.members = True
 
 """Setting up bot"""
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), intents=intents,
+                   description="What's The Flight Plan Bot granted by Tacojesus.")
 
 """Soundlist variables"""
 soundDir = []
@@ -182,7 +183,8 @@ async def get_response(ctx, sounddict):
 
 @bot.event
 async def on_ready():
-    print('Bot online!')
+    print('Logged in as {0} ({0.id})'.format(bot.user))
+    print('------')
 
 
 @bot.event
@@ -451,12 +453,14 @@ async def from_url(url, *, loop=None, stream=False):
 
 
 @bot.command(name="p")
-async def p(ctx, url):
-    await play(ctx, url)
+async def p(ctx, *, url):
+    """Streams from a url"""
+    return await play(ctx, url=url)
 
 
 @bot.command(name="removesong")
 async def remove_song(ctx, index: int):
+    """Remove song from playlist at index"""
     await ctx.send("🎶 Removed: " + song_queue[index - 1] + " from the queue")
     song_queue.pop(index - 1)
     player_queue.pop(index - 1)
@@ -464,6 +468,7 @@ async def remove_song(ctx, index: int):
 
 @bot.command(name="playlist")
 async def playlist(ctx):
+    """Lists the current playlist"""
     if len(song_queue) >= 1:
         playlist_string = "```ini\n"
         for x, y in enumerate(song_queue):
@@ -476,8 +481,8 @@ async def playlist(ctx):
 
 
 @bot.command(name="play")
-async def play(ctx, url):
-    """Streams from a url (same as yt, but doesn't predownload)"""
+async def play(ctx, *, url):
+    """Streams from a url"""
     try:
         voice_channel = ctx.author.voice.channel
     except AttributeError:
@@ -496,6 +501,10 @@ async def play(ctx, url):
                     if ctx.author.voice.channel.guild == vc_client.guild:
                         await vc_client.move_to(voice_channel)
                         vc = vc_client
+    if not validators.url(url):
+        search_result = VideosSearch(url, limit=1)
+        url = search_result.result()['result'][0]['link']
+
     if vc.is_playing():
         player_queue.append(await from_url(url))
         await ctx.send("🎶 Added: " + song_queue[-1] + " to the playlist")
@@ -518,7 +527,7 @@ async def skip(ctx):
 
 
 @bot.command(name="stop")
-async def skip(ctx):
+async def stop(ctx):
     """Stops the player"""
     if ctx.voice_client is None:
         return await ctx.send("Not connected to a voice channel.")
@@ -533,6 +542,14 @@ async def together(ctx, type):
     """Together: youtube, poker, chess, betrayal, fishing"""
     link = await togetherControl.create_link(ctx.author.voice.channel.id, str(type))
     await ctx.send(f"Click the blue link!\n{link}")
+
+
+@tasks.loop(seconds=60)
+async def background_is_playing():
+    if bot.voice_clients:
+        for vc in bot.voice_clients:
+            if not vc.is_playing():
+                await vc.disconnect()
 
 
 @bot.command()
@@ -550,5 +567,11 @@ async def leave(ctx):
     await ctx.message.delete()
 
 
+@background_is_playing.before_loop
+async def before_my_task():
+    await bot.wait_until_ready()  # wait until the bot logs in
+
+
+background_is_playing.start()
 update_soundlist()
 bot.run(TOKEN)
