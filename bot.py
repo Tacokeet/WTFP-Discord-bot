@@ -215,9 +215,10 @@ class Music(commands.Cog):
         'source_address': '0.0.0.0'  # bind to ipv4 since ipv6 addresses cause issues sometimes
     }
     ffmpeg_options = {
-        'options': '-vn'
+        'options': '-vn',
+        'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
     }
-    ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
+    ytdl = youtube_dl.YoutubeDL(ytdl_format_options,)
     song_queue = []
     player_queue = []
 
