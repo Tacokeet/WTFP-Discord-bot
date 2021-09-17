@@ -218,7 +218,7 @@ class Music(commands.Cog):
         'options': '-vn',
         'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
     }
-    ytdl = youtube_dl.YoutubeDL(ytdl_format_options,)
+    ytdl = youtube_dl.YoutubeDL(ytdl_format_options, )
     song_queue = []
     player_queue = []
 
@@ -242,7 +242,7 @@ class Music(commands.Cog):
 
     @commands.command(name="p")
     async def p(self, ctx, *, url):
-        """Streams from a url"""
+        """Streams from an url or searches for song name"""
         return await self.play(ctx, url=url)
 
     @commands.command(name="removesong")
@@ -267,7 +267,7 @@ class Music(commands.Cog):
 
     @commands.command(name="play")
     async def play(self, ctx, *, url):
-        """Streams from a url"""
+        """Streams from an url or searches for song name"""
         vc = ctx.voice_client
         if not validators.url(url):
             search_result = VideosSearch(url, limit=1)
