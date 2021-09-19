@@ -11,6 +11,7 @@ from tinydb import TinyDB, Query
 from tinydb.operations import increment
 from discordTogether import DiscordTogether
 from youtubesearchpython import VideosSearch
+from aiohttp import web
 
 
 class Soundboard(commands.Cog):
@@ -193,8 +194,16 @@ class Soundboard(commands.Cog):
             else:
                 await ctx.send("You are not connected to a voice channel.")
                 raise commands.CommandError("Author not connected to a voice channel.")
-        elif ctx.voice_client.is_playing():
-            ctx.voice_client.stop()
+        elif ctx.voice_client.channel.id is not ctx.author.voice.channel.id:
+            if not ctx.author.voice:
+                await ctx.send("You are not connected to a voice channel.")
+                raise commands.CommandError("Author not connected to a voice channel.")
+            if ctx.voice_client.is_playing():
+                await ctx.send("Sorry I'm busy in another voice channel!.")
+                raise commands.CommandError("Author not in same voice channel.")
+            else:
+                await ctx.voice_client.disconnect()
+                await ctx.author.voice.channel.connect()
 
 
 class Music(commands.Cog):
@@ -242,7 +251,7 @@ class Music(commands.Cog):
 
     @commands.command(name="p")
     async def p(self, ctx, *, url):
-        """Streams from an url or searches for song name"""
+        """Streams from an url or searches for song name."""
         return await self.play(ctx, url=url)
 
     @commands.command(name="removesong")
@@ -274,7 +283,7 @@ class Music(commands.Cog):
             url = search_result.result()['result'][0]['link']
 
         if vc.is_playing():
-            self.player_queue.append(await self.from_url(url))
+            self.player_queue.append(await self.from_url(url, loop=bot.loop, stream=True))
             await ctx.send("🎶 Added: " + self.song_queue[-1] + " to the playlist")
             return
 
@@ -307,8 +316,16 @@ class Music(commands.Cog):
             else:
                 await ctx.send("You are not connected to a voice channel.")
                 raise commands.CommandError("Author not connected to a voice channel.")
-        elif ctx.voice_client.is_playing():
-            ctx.voice_client.stop()
+        elif ctx.voice_client.channel.id is not ctx.author.voice.channel.id:
+            if not ctx.author.voice:
+                await ctx.send("You are not connected to a voice channel.")
+                raise commands.CommandError("Author not connected to a voice channel.")
+            if ctx.voice_client.is_playing():
+                await ctx.send("Sorry I'm busy singing songs in another voice channel!.")
+                raise commands.CommandError("Author not in same voice channel.")
+            else:
+                await ctx.voice_client.disconnect()
+                await ctx.author.voice.channel.connect()
 
 
 class Streepje(commands.Cog):
@@ -452,8 +469,16 @@ class Jeopardy(commands.Cog):
             else:
                 await ctx.send("You are not connected to a voice channel.")
                 raise commands.CommandError("Author not connected to a voice channel.")
-        elif ctx.voice_client.is_playing():
-            ctx.voice_client.stop()
+        elif ctx.voice_client.channel.id is not ctx.author.voice.channel.id:
+            if not ctx.author.voice:
+                await ctx.send("You are not connected to a voice channel.")
+                raise commands.CommandError("Author not connected to a voice channel.")
+            if ctx.voice_client.is_playing():
+                await ctx.send("Jeopardy is happening in another voice channel!.")
+                raise commands.CommandError("Author not in same voice channel.")
+            else:
+                await ctx.voice_client.disconnect()
+                await ctx.author.voice.channel.connect()
 
 
 class Together(commands.Cog):
@@ -477,6 +502,33 @@ class Together(commands.Cog):
                 raise commands.CommandError("Author not connected to a voice channel.")
         elif ctx.voice_client.is_playing():
             ctx.voice_client.stop()
+
+
+class Website(commands.Cog):
+
+    def __init__(self, bot):
+        self.bot = bot
+
+    counter = 1
+
+    async def webserver(self):
+        async def handler(request):
+            return web.Response(text=str(self.counter))
+
+        app = web.Application()
+        app.router.add_get('/', handler)
+        runner = web.AppRunner(app)
+        await runner.setup()
+        self.site = web.TCPSite(runner, 'localhost', 8999)
+        await self.bot.wait_until_ready()
+        await self.site.start()
+
+    def __unload(self):
+        asyncio.ensure_future(self.site.stop())
+
+    @commands.command('updatavar')
+    async def together(self, ctx):
+        self.counter += 1
 
 
 load_dotenv()
@@ -527,5 +579,9 @@ bot.add_cog(Music(bot))
 bot.add_cog(Streepje(bot))
 bot.add_cog(Jeopardy(bot))
 bot.add_cog(Together(bot))
+
+# website = Website(bot)
+# bot.add_cog(website)
+# bot.loop.create_task(website.webserver())
 
 bot.run(TOKEN)
