@@ -5,7 +5,10 @@ import eyed3
 import os
 import youtube_dl
 import validators
-from discord.ext import commands, tasks
+import aiohttp_jinja2
+import jinja2
+from aiohttp import web
+from discord.ext import commands
 from dotenv import load_dotenv
 from tinydb import TinyDB, Query
 from tinydb.operations import increment
@@ -52,7 +55,7 @@ class Soundboard(commands.Cog):
     @staticmethod
     def search_soundlist(search, sounddict):
         """Searcher through dict.values and gets all the items containing search."""
-        clean_soundlist = [x.lower().strip('.mp3') for x in list(sounddict.keys())]
+        clean_soundlist = [x.strip('.mp3').lower() for x in list(sounddict.keys())]
         results = []
         for sound in clean_soundlist:
             if search in sound:
@@ -146,34 +149,38 @@ class Soundboard(commands.Cog):
         await ctx.message.delete()
 
     @commands.command(name='sbsearch')
-    async def soundboardsearch(self, ctx, search):
+    async def soundboardsearch(self, ctx, *, search):
         """Search trough all the available sounds and show them, then type a number to play the sound."""
         results = self.search_soundlist(search.lower(), self.soundDict)
         if results:
             css = self.create_search_soundlist(results, self.soundDict)
             for result_list in css[0]:
                 await ctx.send(result_list)
-            await ctx.message.delete()
+            # await ctx.message.delete()
             await ctx.send("Type a number to make a choice or type cancel to stop")
             response = await self.get_response(ctx, css[1])
             if not response:
                 return
             try:
-                await self.soundboard(ctx, self.soundDir[results[response - 1]].strip('.mp3'))
+                await self.soundboard(ctx, sound=self.soundDir[results[response - 1]].strip('.mp3'))
             except AttributeError:
                 await ctx.send("You are currently not in a voice channel!\nPlease join a voice channel.")
         else:
             await ctx.send("Could not find any sounds matching that description")
 
     @commands.command(name="sb")
-    async def soundboard(self, ctx, sound):
+    async def soundboard(self, ctx, *, sound):
         """Play the sound given in parameter, this can be the name or index in list."""
         vc = ctx.voice_client
         if sound.isdigit():
             vc.play(discord.FFmpegOpusAudio(source=self.path_to_soundfiles + '/' + self.soundDir[int(sound) - 1]))
         else:
-            vc.play(discord.FFmpegOpusAudio(source=self.path_to_soundfiles + '/' + sound + ".mp3"))
-        await ctx.message.delete()
+            if sound.lower() in [x.strip('.mp3').lower() for x in list(self.soundDict.keys())]:
+                vc.play(discord.FFmpegOpusAudio(source=self.path_to_soundfiles + '/' + sound + ".mp3"))
+            else:
+                await ctx.send("Your sound is not here, trying to find closest match.")
+                await self.soundboardsearch(ctx=ctx, search=sound)
+        # await ctx.message.delete()
 
     @commands.command(name="reload")
     async def reload(self, ctx):
@@ -503,6 +510,37 @@ class Together(commands.Cog):
             ctx.voice_client.stop()
 
 
+class Website(commands.Cog):
+    def __init__(self, bot, messages):
+        self.bot = bot
+        self.messages = messages
+
+    @aiohttp_jinja2.template('index.html')
+    async def index(self, request):
+        return messages
+
+    @aiohttp_jinja2.template('index.html')
+    async def test(self, request):
+        return {"questions": [{'question_text': 'His new?'}]}
+
+    async def webserver(self):
+        async def handler(request):
+            return web.Response()
+
+        app = web.Application()
+        aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(str("templates")))
+        app.router.add_get('/', self.index)
+        app.router.add_get('/test', self.test)
+        runner = web.AppRunner(app)
+        await runner.setup()
+        self.site = web.TCPSite(runner, 'localhost', 8080)
+        await self.bot.wait_until_ready()
+        await self.site.start()
+
+    def __unload(self):
+        asyncio.ensure_future(self.site.stop())
+
+
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
@@ -510,6 +548,7 @@ intents = discord.Intents.default()
 intents.members = True
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), intents=intents,
                    description="What's The Flight Plan Bot granted by Tacojesus.")
+messages = {"Messages": []}
 
 
 @bot.event
@@ -518,12 +557,11 @@ async def on_ready():
     print('------')
 
 
-@tasks.loop(seconds=60)
-async def background_is_playing():
-    if bot.voice_clients:
-        for vc in bot.voice_clients:
-            if not vc.is_playing():
-                await vc.disconnect()
+@bot.event
+async def on_message(ctx):
+    """Add message to list."""
+    messages["Messages"].append(ctx)
+    await bot.process_commands(ctx)
 
 
 @bot.command()
@@ -541,9 +579,24 @@ async def leave(ctx):
     await ctx.message.delete()
 
 
-@background_is_playing.before_loop
-async def before_my_task():
-    await bot.wait_until_ready()  # wait until the bot logs in
+@bot.event
+async def on_voice_state_update(member, before, after):
+    """Disconnects from voicechannel after 60s of inactivity."""
+    if not member.id == bot.user.id:
+        return
+
+    elif before.channel is None:
+        voice = after.channel.guild.voice_client
+        time = 0
+        while True:
+            await asyncio.sleep(1)
+            time = time + 1
+            if voice.is_playing() and not voice.is_paused():
+                time = 0
+            if time == 60:
+                await voice.disconnect()
+            if not voice.is_connected():
+                break
 
 
 bot.add_cog(Soundboard(bot))
@@ -551,5 +604,9 @@ bot.add_cog(Music(bot))
 bot.add_cog(Streepje(bot))
 bot.add_cog(Jeopardy(bot))
 bot.add_cog(Together(bot))
+
+website = Website(bot, messages)
+bot.add_cog(website)
+bot.loop.create_task(website.webserver())
 
 bot.run(TOKEN)
