@@ -534,7 +534,7 @@ class Website(commands.Cog):
         app.router.add_get('/errors', self.test)
         runner = web.AppRunner(app)
         await runner.setup()
-        self.site = web.TCPSite(runner, 'localhost', 8080)
+        self.site = web.TCPSite(runner, '0.0.0.0', 8080)
         await self.bot.wait_until_ready()
         await self.site.start()
 
