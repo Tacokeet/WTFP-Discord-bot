@@ -1,0 +1,12 @@
+<!--aiohttpdemo_polls/templates/index.html-->
+{% set title = "Main" %}
+<h>Hello Big boy</h>
+{% if Messages %}
+<ul>
+    {% for message in Messages %}
+    <li>{{ message.author.name + " said : " + message.content + " at: " + message.created_at.strftime("%H:%M:%S %d-%m-%y")}}</li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>No messages have been send.</p>
+{% endif %}
