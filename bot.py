@@ -511,17 +511,18 @@ class Together(commands.Cog):
 
 
 class Website(commands.Cog):
-    def __init__(self, bot, messages):
+    def __init__(self, bot, messages, errors):
         self.bot = bot
         self.messages = messages
+        self.errors = errors
 
     @aiohttp_jinja2.template('index.html')
     async def index(self, request):
         return messages
 
-    @aiohttp_jinja2.template('index.html')
+    @aiohttp_jinja2.template('errors.html')
     async def test(self, request):
-        return {"questions": [{'question_text': 'His new?'}]}
+        return errors
 
     async def webserver(self):
         async def handler(request):
@@ -530,7 +531,7 @@ class Website(commands.Cog):
         app = web.Application()
         aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(str("templates")))
         app.router.add_get('/', self.index)
-        app.router.add_get('/test', self.test)
+        app.router.add_get('/errors', self.test)
         runner = web.AppRunner(app)
         await runner.setup()
         self.site = web.TCPSite(runner, 'localhost', 8080)
@@ -549,12 +550,19 @@ intents.members = True
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), intents=intents,
                    description="What's The Flight Plan Bot granted by Tacojesus.")
 messages = {"Messages": []}
+errors = {"Errors": []}
 
 
 @bot.event
 async def on_ready():
     print('Logged in as {0} ({0.id})'.format(bot.user))
     print('------')
+
+
+@bot.event
+async def on_command_error(ctx, error):
+    error_msg = [ctx.message, str(error)]
+    errors["Errors"].append(error_msg)
 
 
 @bot.event
@@ -605,7 +613,7 @@ bot.add_cog(Streepje(bot))
 bot.add_cog(Jeopardy(bot))
 bot.add_cog(Together(bot))
 
-website = Website(bot, messages)
+website = Website(bot, messages, errors)
 bot.add_cog(website)
 bot.loop.create_task(website.webserver())
 

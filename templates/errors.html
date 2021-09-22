@@ -1,0 +1,11 @@
+{% set title = "Main" %}
+<h>People who stupid</h>
+{% if Errors %}
+<ul>
+    {% for error in Errors %}
+    <li>{{ error[0].author.name + " said: " + error[0].content + " and created this error: " + error[1] }}</li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>No errors.</p>
+{% endif %}
