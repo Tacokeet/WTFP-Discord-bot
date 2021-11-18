@@ -622,7 +622,7 @@ class Calender(commands.Cog):
     async def bd_alert(self):
         now = datetime.datetime.now()
         two_weeks_from_now = now + datetime.timedelta(days=14)
-        if now.hour == 22:  # should be 8
+        if now.hour == 8:  # should be 8
             for user in self.db:
                 if user['day'] is now.day and user['month'] is now.month:
                     await self.available_text_channels[0].send(
