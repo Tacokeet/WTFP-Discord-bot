@@ -545,7 +545,7 @@ class Website(commands.Cog):
         asyncio.ensure_future(self.site.stop())
 
 
-class Calender(commands.Cog):
+class Calendar(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.bd_alert.start()
@@ -610,13 +610,13 @@ class Calender(commands.Cog):
                 {'name': ctx.author.id, 'day': int(day), 'month': int(month), 'year': int(year), 'alert': False})
         else:
             self.db.update({'day': int(day), 'month': int(month), 'year': int(year)}, self.User.name == ctx.author.id)
-        await ctx.send("Noted! " + ctx.author.name + " your birthday is on " + day + "-" + month)
+        await ctx.send("Noted! " + ctx.author.name + ", your birthday is on " + day + "-" + month)
 
     @commands.command(name="notifybd")
     async def notify_bd(self, ctx):
         """Add yourself to the notify list to get notified when someone's birthday is within 2 weeks"""
         await ctx.author.add_roles(self.birthday_role)
-        await ctx.send("Added " + ctx.author.name + " to the notify list for birthdays!")
+        await ctx.send("Added " + ctx.author.name + " ,to the notify list for birthdays!")
 
     @tasks.loop(hours=1)  # every hour
     async def bd_alert(self):
@@ -741,7 +741,7 @@ bot.add_cog(Music(bot))
 bot.add_cog(Streepje(bot))
 bot.add_cog(Jeopardy(bot))
 bot.add_cog(Together(bot))
-bot.add_cog(Calender(bot))
+bot.add_cog(Calendar(bot))
 
 website = Website(bot, messages, errors)
 bot.add_cog(website)
