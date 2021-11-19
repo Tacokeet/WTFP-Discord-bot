@@ -13,3 +13,4 @@ aiodns==3.0.0
 aiofiles==0.4.0
 aiosignal==1.2.0
 charset-normalizer==2.0.7
+cchardet==2.1.7
