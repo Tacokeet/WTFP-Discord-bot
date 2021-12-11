@@ -668,7 +668,8 @@ class Calendar(commands.Cog):
             for channel in server.channels:
                 if str(channel.type) == 'text':
                     if channel.permissions_for(server.me).send_messages:
-                        self.available_text_channels.append(channel)
+                        if "birthday" in channel.name:
+                            self.available_text_channels.append(channel)
 
 
 load_dotenv()
