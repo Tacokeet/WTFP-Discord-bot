@@ -137,7 +137,7 @@ class Soundboard(commands.Cog):
 
     @commands.command(name='sblist')
     async def soundboardlist(self, ctx):
-        """Shows all sounds that are available and if you type a number it will the the associate sound."""
+        """Shows all sounds that are available and if you type a number it will play the associate sound."""
         for sb_messages in self.create_soundboardlist(self.soundDict):
             await ctx.send(sb_messages)
         await ctx.send("Type a number to make a choice or type cancel to stop")
