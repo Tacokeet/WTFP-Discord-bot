@@ -14,3 +14,5 @@ aiofiles==0.4.0
 aiosignal==1.2.0
 charset-normalizer==2.0.7
 cchardet==2.1.7
+spotipy~=2.19.0
+numpy~=1.22.3

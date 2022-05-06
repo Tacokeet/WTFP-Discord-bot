@@ -190,7 +190,7 @@ class Soundboard(commands.Cog):
     async def reload(self, ctx):
         """Reloads the soundboard."""
         self.update_soundlist()
-        await ctx.message.channel.send(
+        await ctx.respond(
             "All sounds are reloaded!"
         )
         await ctx.message.delete()
@@ -202,14 +202,14 @@ class Soundboard(commands.Cog):
             if ctx.author.voice:
                 await ctx.author.voice.channel.connect()
             else:
-                await ctx.send("You are not connected to a voice channel.")
+                await ctx.respond("You are not connected to a voice channel.")
                 raise commands.CommandError("Author not connected to a voice channel.")
         elif ctx.voice_client.channel.id is not ctx.author.voice.channel.id:
             if not ctx.author.voice:
-                await ctx.send("You are not connected to a voice channel.")
+                await ctx.respond("You are not connected to a voice channel.")
                 raise commands.CommandError("Author not connected to a voice channel.")
             if ctx.voice_client.is_playing():
-                await ctx.send("Sorry I'm busy in another voice channel!")
+                await ctx.respond("Sorry I'm busy in another voice channel!")
                 raise commands.CommandError("Author not in same voice channel.")
             else:
                 await ctx.voice_client.disconnect()

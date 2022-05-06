@@ -46,9 +46,9 @@ class Streepje(commands.Cog):
             message += "{person} : {streepjes}\n".format(person=self.bot.get_user(person['name']).name,
                                                          streepjes=person['streepjes'])
         if message == "":
-            await ctx.message.channel.send("There aren't any streepjes in the database.")
+            await ctx.respond("There aren't any streepjes in the database.")
         else:
-            await ctx.message.channel.send(message)
+            await ctx.respond(message)
         await ctx.message.delete()
 
     @discord.slash_command(name="streepje")

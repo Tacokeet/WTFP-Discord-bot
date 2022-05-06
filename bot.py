@@ -7,11 +7,12 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 intents = discord.Intents.all()
-intents.members = True
+# intents.members = True
 
 bot = discord.Bot(intents=intents,
                   description="What's The Flight Plan Bot granted by Tacojesus.",
-                  debug_guilds=[181375626245046272])
+                  debug_guilds=[181375626245046272]
+                  )
 
 
 @bot.event
@@ -66,6 +67,7 @@ cogs_list = [
     'streepje',
     'together',
     'calendar',
+    'spotify',
 ]
 
 for cog in cogs_list:
