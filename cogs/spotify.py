@@ -11,7 +11,7 @@ class Spotify(commands.Cog):
         self.bot = bot
         self.sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=self.client_id,
                                                             client_secret=self.client_secret,
-                                                            redirect_uri="http://localhost",
+                                                            redirect_uri="http://localhost:8080",
                                                             scope="playlist-modify-public"))
 
     load_dotenv()
@@ -49,6 +49,23 @@ class Spotify(commands.Cog):
         """Add yourself to the list to get notified when someone wants to add a song to the WTFP playlist"""
         await ctx.author.add_roles(self.spotify_role)
         await ctx.respond("Added " + ctx.author.name + " to the spotify notify list.")
+
+    @discord.slash_command()
+    async def spotify_url(self, ctx: discord.ApplicationContext):
+        """Admin use only"""
+        if ctx.author.guild_permissions.ban_members:
+            await ctx.respond(self.sp.auth_manager.get_authorize_url(), ephemeral=True)
+        else:
+            await ctx.respond("Fuck off pleb", ephemeral=True)
+
+    @discord.slash_command()
+    async def set_spotify_auth(self, ctx: discord.ApplicationContext, url):
+        """Admin use only"""
+        if ctx.author.guild_permissions.ban_members:
+            code = self.sp.auth_manager.parse_response_code(url)
+            await ctx.respond(self.sp.auth_manager.get_access_token(code), ephemeral=True)
+        else:
+            await ctx.respond("Fuck off pleb", ephemeral=True)
 
     @discord.Cog.listener()
     async def on_ready(self):

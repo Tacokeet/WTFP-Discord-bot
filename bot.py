@@ -12,6 +12,7 @@ intents = discord.Intents.all()
 bot = discord.Bot(intents=intents,
                   description="What's The Flight Plan Bot granted by Tacojesus.",
                   debug_guilds=[181375626245046272]
+                  # debug_guilds=[181374963427704833]
                   )
 
 
