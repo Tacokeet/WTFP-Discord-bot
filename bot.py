@@ -26,6 +26,7 @@ bot = discord.Bot(intents=intents,
 
 path_to_soundfiles = str(os.getenv('SOUNDFILE_PATH'))
 
+
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user} (ID: {bot.user.id})")
