@@ -172,7 +172,7 @@ class Soundboard(commands.Cog):
         view = basic_view
         for sound_button in self.sound_pages[self.person][0]:
             view.add_item(sound_button)
-        await ctx.send(view=view)
+        await ctx.respond(view=view)
 
     async def get_sounds(self, ctx: discord.AutocompleteContext):
         """Returns a list of colors that begin with the characters entered so far."""

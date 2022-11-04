@@ -1,8 +1,17 @@
 import asyncio
 import discord
 import os
+import logging
 
 from dotenv import load_dotenv
+
+logging.basicConfig(level=logging.INFO)
+
+logger = logging.getLogger('discord')
+logger.setLevel(logging.DEBUG)
+handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
+logger.addHandler(handler)
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -15,6 +24,7 @@ bot = discord.Bot(intents=intents,
                   # debug_guilds=[181374963427704833]
                   )
 
+path_to_soundfiles = str(os.getenv('SOUNDFILE_PATH'))
 
 @bot.event
 async def on_ready():
@@ -29,25 +39,35 @@ async def on_command_error(ctx, error):
 
 @bot.command()
 async def join(ctx):
-    """Join your current voicechannel."""
+    """Join your current voice-channel."""
     channel = ctx.author.voice.channel
+    await ctx.respond("Joining your voicec-hannel! ", delete_after=1)
     await channel.connect()
-    await ctx.message.delete()
 
 
 @bot.command()
 async def leave(ctx):
-    """Disconnect from current voicechannel."""
+    """Disconnect from current voice-channel."""
+    await ctx.respond("Leaving your voice-channel! ", delete_after=1)
     await ctx.voice_client.disconnect()
-    await ctx.message.delete()
+
+
+def my_after(vc):
+    coro = vc.disconnect()
+    fut = asyncio.run_coroutine_threadsafe(coro, bot.loop)
+    try:
+        fut.result()
+    except Exception as bex:
+        print(bex)
+        pass
 
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    """Disconnects from voicechannel after 230s of inactivity."""
+    """Disconnects from voice-channel after 230s of inactivity."""
+
     if not member.id == bot.user.id:
         return
-
     elif before.channel is None:
         voice = after.channel.guild.voice_client
         time = 0
@@ -57,7 +77,11 @@ async def on_voice_state_update(member, before, after):
             if voice.is_playing() and not voice.is_paused():
                 time = 0
             if time == 230:
-                await voice.disconnect()
+                if os.path.isfile(path_to_soundfiles + '/Marokaan uit bitch.mp3'):
+                    voice.play(discord.FFmpegOpusAudio(source=path_to_soundfiles + '/Marokaan uit bitch.mp3'),
+                               after=lambda e: my_after(voice))
+                else:
+                    await voice.disconnect()
             if not voice.is_connected():
                 break
 
