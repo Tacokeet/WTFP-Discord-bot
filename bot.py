@@ -91,7 +91,7 @@ cogs_list = [
     'soundboard',
     'music',
     'streepje',
-    'together',
+    # 'together',
     'calendar',
     'spotify',
 ]
