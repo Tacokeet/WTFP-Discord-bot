@@ -124,7 +124,7 @@ class Soundboard(commands.Cog):
 
         async def play_button(interaction):
             vc = ctx.voice_client
-            vc.play(discord.FFmpegOpusAudio(source=self.path_to_soundfiles + '/' + interaction.custom_id + '.mp3'))
+            vc.play(discord.FFmpegOpusAudio(source=self.path_to_soundfiles + '/' + interaction.custom_id + '.mp3', options='-vn -ar 48000 -af loudnorm=I=-28:LRA=7:TP=-1.5'))
             await interaction.response.send_message('🎵 Playing: ' + interaction.custom_id, delete_after=1)
 
         # Generate sound button per 15 into list
@@ -183,7 +183,7 @@ class Soundboard(commands.Cog):
                          sound: Option(str, "Pick a sound!", autocomplete=get_sounds)):
         """Play the sound given in parameter, this can be the name or index in list."""
         vc = ctx.voice_client
-        vc.play(discord.FFmpegOpusAudio(source=self.path_to_soundfiles + '/' + sound + '.mp3'))
+        vc.play(discord.FFmpegOpusAudio(source=self.path_to_soundfiles + '/' + sound + '.mp3', options='-vn -ar 48000 -af loudnorm=I=-28:LRA=7:TP=-1.5'))
         await ctx.respond("🎵 Playing: " + sound, delete_after=1)
 
     @discord.slash_command(name='reload')

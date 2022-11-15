@@ -24,7 +24,7 @@ class Music(commands.Cog):
         'source_address': '0.0.0.0'  # bind to ipv4 since ipv6 addresses cause issues sometimes
     }
     ffmpeg_options = {
-        'options': '-vn',
+        'options': '-vn -ar 48000 -af loudnorm=I=-28:LRA=7:TP=-1.5',
         'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
     }
     ytdl = youtube_dl.YoutubeDL(ytdl_format_options, )

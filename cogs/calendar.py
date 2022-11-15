@@ -78,7 +78,7 @@ class Calendar(commands.Cog):
                 if user['day'] is two_weeks_from_now.day and user['month'] is two_weeks_from_now.month:
                     self.db.update({'alert': False}, self.User.name == user['name'])
                     await self.available_text_channels[0].send(self.birthday_role.mention + ' ' + self.bot.get_user(
-                        user['name']).name + " his birthday will be in two weeks don't forget to buy some presents! 🎁")
+                        user['name']).name + " their birthday will be in two weeks don't forget to buy some presents! 🎁")
         for guild in self.bot.guilds:
             for user in self.db:
                 member = await guild.fetch_member(user['name'])
