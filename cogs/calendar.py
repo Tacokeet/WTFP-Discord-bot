@@ -73,7 +73,7 @@ class Calendar(commands.Cog):
             for user in self.db:
                 if user['day'] is now.day and user['month'] is now.month:
                     await self.available_text_channels[0].send(
-                        "🎉 Happy Birthday " + self.bot.get_user(user['name']).mention + " You turned " + str(
+                        self.birthday_role.mention + ' ' + "🎉 Happy Birthday " + self.bot.get_user(user['name']).mention + " You turned " + str(
                             now.year - user['year']) + " years old! 🎉")
                 if user['day'] is two_weeks_from_now.day and user['month'] is two_weeks_from_now.month:
                     self.db.update({'alert': False}, self.User.name == user['name'])
