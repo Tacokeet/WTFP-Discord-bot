@@ -1,4 +1,4 @@
-py-cord[voice]==2.2.2
+py-cord[voice]==2.4.1
 eyed3==0.9.6
 yt-dlp
 youtube-search-python==1.4.7
